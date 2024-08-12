@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#Configures HAProxy to be able to accept requests on port tcp/80 and redirect them to the web servers
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
