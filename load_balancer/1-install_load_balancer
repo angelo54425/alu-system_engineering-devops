@@ -1,75 +1,20 @@
 #!/usr/bin/env bash
 #Configures HAProxy to be able to accept requests on port tcp/80 and redirect them to the web servers
+sudo apt update -y
+sudo apt install haproxy -y
+config=\
+"backend my_servers
+        balance roundrobin
+        server 5986-web-01 34.227.78.49
+        server 5986-web-02 3.93.195.205
+frontend haproxy_inbound
+        bind *:80
+        default_backend my_servers
+        mode http
+"
 
-# Exit immediately if a command exits with a non-zero status.
-set -e
-
-# Update package index
-sudo apt-get update
-
-# Install HAProxy
-sudo apt-get install -y haproxy
-
-# Configure HAProxy
-HAPROXY_CONF="/etc/haproxy/haproxy.cfg"
-
-# Backup original HAProxy configuration file
-sudo cp $HAPROXY_CONF "${HAPROXY_CONF}.bak"
-
-# Write the new HAProxy configuration
-sudo bash -c "cat > $HAPROXY_CONF" <<EOL
-# Global settings
-global
-    log /dev/log    local0
-    log /dev/log    local1 notice
-    chroot /var/lib/haproxy
-    stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
-    stats timeout 30s
-    user haproxy
-    group haproxy
-    daemon
-
-# Default settings
-defaults
-    log     global
-    option  httplog
-    option  dontlognull
-    timeout connect 5000ms
-    timeout client  50000ms
-    timeout server  50000ms
-    errorfile 400 /etc/haproxy/errors/400.http
-    errorfile 403 /etc/haproxy/errors/403.http
-    errorfile 408 /etc/haproxy/errors/408.http
-    errorfile 500 /etc/haproxy/errors/500.http
-    errorfile 502 /etc/haproxy/errors/502.http
-    errorfile 503 /etc/haproxy/errors/503.http
-    errorfile 504 /etc/haproxy/errors/504.http
-
-# Frontend configuration
-frontend http_front
-    bind *:80
-    default_backend servers
-
-# Backend configuration
-backend servers
-    balance roundrobin
-    server web-01 [STUDENT_ID]-web-01:80 check
-    server web-02 [STUDENT_ID]-web-02:80 check
-
-# Enable HAProxy stats page
-listen stats
-    bind :8080
-    stats enable
-    stats uri /
-    stats refresh 10s
-    stats show-node
-EOL
-
-# Restart HAProxy to apply changes
-sudo systemctl restart haproxy
-
-# Ensure HAProxy is running
-sudo systemctl status haproxy
-
-# Enable HAProxy to start at boot
-sudo systemctl enable haproxy
+sudo chown -R "$USER":"$USER" /etc/default/haproxy
+sudo chown -R "$USER":"$USER" /etc/haproxy/haproxy.cfg
+sudo echo "ENABLED=1" >> /etc/default/haproxy
+sudo echo "$config" >> /etc/haproxy/haproxy.cfg
+sudo service haproxy start
